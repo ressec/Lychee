@@ -63,7 +63,10 @@ jobs:
 
       # Step: Maven Clean & Package
       - name: Package with Maven
-        run: mvn -B clean package -f lychee-parent/pom.xml
+        run: mvn -s $GITHUB_WORKSPACE/.github/workflows/maven-settings.xml -B clean package -f lychee-parent/pom.xml
+        env:
+          RESSEC_GITHUB_USERNAME: ${{ secrets.RESSEC_GITHUB_USERNAME }}
+          RESSEC_GITHUB_READ_TOKEN: ${{ secrets.RESSEC_GITHUB_READ_TOKEN }}
 
       # Step - Maven Verify for Sonar
       - name: Build & Analyze with SonarCloud
