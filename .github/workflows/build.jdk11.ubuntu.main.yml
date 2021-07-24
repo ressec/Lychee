@@ -63,14 +63,17 @@ jobs:
 
       # Step: Maven Clean & Package
       - name: Package with Maven
-        run: mvn -s $GITHUB_WORKSPACE/.github/workflows/maven-settings.xml -B clean package -f lychee-parent/pom.xml
+        run: mvn -B clean package -f lychee-parent/pom.xml
+        env:
+          RESSEC_GITHUB_USERNAME: ${{ secrets.RESSEC_GITHUB_USERNAME }}
+          RESSEC_GITHUB_OPEN_TOKEN: ${{ secrets.RESSEC_GITHUB_OPEN_TOKEN }}
 
       # Step - Maven Verify for Sonar
       - name: Build & Analyze with SonarCloud
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any.
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -s $GITHUB_WORKSPACE/.github/workflows/maven-settings.xml -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -f lychee-parent/pom.xml
+        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -f lychee-parent/pom.xml
 
   # Job: Deploy artifacts to Github Packages
   deploy:
@@ -97,4 +100,4 @@ jobs:
       - name: Deploy to Github Packages with Maven
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: mvn -s $GITHUB_WORKSPACE/.github/workflows/maven-settings.xml --batch-mode deploy -f lychee-parent/pom.xml
+        run: mvn --batch-mode deploy -f lychee-parent/pom.xml
