@@ -40,14 +40,14 @@
 
         <!-- Github -->
         <server>
-            <id>github</id>
+            <id>github-write</id>
             <username>${RESSEC_GITHUB_USERNAME}</username>
             <password>${RESSEC_GITHUB_OPEN_TOKEN}</password>
         </server>
 
         <!-- Github ResseC public Maven package repository -->
         <server>
-            <id>github</id>
+            <id>github-read</id>
             <username>${RESSEC_GITHUB_USERNAME}</username>
             <password>${RESSEC_GITHUB_OPEN_TOKEN}</password>
         </server>
