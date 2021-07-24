@@ -38,18 +38,18 @@
             <password>${CI_DEPLOY_GITLAB_PRIVATE_PASSWORD}</password>
         </server>
 
-        <!-- Github -->
+        <!-- Github ResseC with write permissions -->
         <server>
             <id>github-write</id>
             <username>${RESSEC_GITHUB_USERNAME}</username>
-            <password>${RESSEC_GITHUB_OPEN_TOKEN}</password>
+            <password>${RESSEC_GITHUB_WRITE_TOKEN}</password>
         </server>
 
-        <!-- Github ResseC public Maven package repository -->
+        <!-- Github ResseC with read permissions (public) -->
         <server>
             <id>github-read</id>
             <username>${RESSEC_GITHUB_USERNAME}</username>
-            <password>${RESSEC_GITHUB_OPEN_TOKEN}</password>
+            <password>${RESSEC_GITHUB_READ_TOKEN}</password>
         </server>
 
     </servers>
