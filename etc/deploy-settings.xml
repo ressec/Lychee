@@ -41,8 +41,9 @@
         <!-- Github -->
         <server>
             <id>github</id>
-            <username>${CI_DEPLOY_GITHUB_USERNAME}</username>
-            <password>${CI_DEPLOY_GITHUB_PASSWORD}</password>
+            <privateKey>${RESSEC_GITHUB_PACKAGES}</privateKey>
+<!--            <username>${CI_DEPLOY_GITHUB_USERNAME}</username>-->
+<!--            <password>${CI_DEPLOY_GITHUB_PASSWORD}</password>-->
         </server>
 
     </servers>

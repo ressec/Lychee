@@ -14,14 +14,6 @@
         <module>../lychee-translation</module>
     </modules>
 
-    <scm>
-        <url>https://github.com/ressec/lychee</url>
-        <connection>scm:git:ssh://git@github.com/ressec/lychee.git</connection>
-        <!--suppress UnresolvedMavenProperty -->
-        <developerConnection>scm:git:[push=]ssh://git@github.com/ressec/lychee.git[fetch=]ssh://git@github.com/ressec/lychee.git</developerConnection>
-        <tag>HEAD</tag>
-    </scm>
-
     <developers>
 
         <developer>
@@ -53,7 +45,7 @@
         <sonar.organization>ressec-github</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
 
-        <!-- Own projects version properties -->
+        <!-- ResseC dependencies version properties -->
         <version.ressec.avocado>0.1.0-SNAPSHOT</version.ressec.avocado>
 
         <!-- Plugin version properties -->
@@ -389,5 +381,13 @@
 
         </plugins>
     </build>
+
+    <scm>
+        <url>https://github.com/ressec/lychee</url>
+        <connection>scm:git:ssh://git@github.com/ressec/lychee.git</connection>
+        <!--suppress UnresolvedMavenProperty -->
+        <developerConnection>scm:git:[push=]ssh://git@github.com/ressec/lychee.git[fetch=]ssh://git@github.com/ressec/lychee.git</developerConnection>
+        <tag>HEAD</tag>
+    </scm>
 
 </project>
