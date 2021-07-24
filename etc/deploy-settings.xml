@@ -41,9 +41,8 @@
         <!-- Github -->
         <server>
             <id>github</id>
-            <privateKey>${RESSEC_GITHUB_PACKAGES}</privateKey>
-<!--            <username>${CI_DEPLOY_GITHUB_USERNAME}</username>-->
-<!--            <password>${CI_DEPLOY_GITHUB_PASSWORD}</password>-->
+            <username>${RESSEC_GITHUB_USERNAME}</username>
+            <password>${RESSEC_GITHUB_TOKEN}</password>
         </server>
 
     </servers>
