@@ -9,9 +9,12 @@
 # License can be consulted at http://www.apache.org/licenses/LICENSE-2.0
 # --------------------------------------------------------------------------------------
 #
-# Note: This Github action is triggered when code is pushed to the 'main' branch to:
-# - build
-# - analyse for code quality
+# Note: This Github action is triggered when code is pushed to the 'main' branch in following cases:
+#          - commits
+#          - pull requests
+#       then the following jobs are triggered:
+#          - build
+#          - deploy
 #
 name: main.maven.jdk11.ubuntu
 
@@ -62,14 +65,14 @@ jobs:
           restore-keys: ${{ runner.os }}-m2
 
       # Step: Maven Clean & Package
-      - name: Package with Maven
+      - name: Build & Package with Maven
         run: mvn -s $GITHUB_WORKSPACE/.github/workflows/maven-settings.xml -B clean package -f lychee-parent/pom.xml
         env:
           RESSEC_GITHUB_USERNAME: ${{ secrets.RESSEC_GITHUB_USERNAME }}
           RESSEC_GITHUB_READ_TOKEN: ${{ secrets.RESSEC_GITHUB_READ_TOKEN }}
 
       # Step - Maven Verify for Sonar
-      - name: Build & Analyze with SonarCloud
+      - name: Analyze with Sonar
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any.
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -77,7 +80,7 @@ jobs:
 
   # Job: Deploy artifacts to Github Packages
   deploy:
-    name: Deploy
+    name: Deploy with Maven
     runs-on: ubuntu-latest
     if: github.event.pull_request.base.ref == 'main'
     permissions:
