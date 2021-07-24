@@ -73,7 +73,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any.
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -s $GITHUB_WORKSPACE/.github/workflows/maven-settings.xml -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -f lychee-parent/pom.xml
+        run: mvn -s $GITHUB_WORKSPACE/.github/workflows/maven-settings.xml -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -f lychee-parent/pom.xml -P coverage
 
   # Job: Deploy artifacts to Github Packages
   deploy:
