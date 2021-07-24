@@ -1,0 +1,50 @@
+<settings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0
+                          http://maven.apache.org/xsd/settings-1.0.0.xsd">
+
+    <!-- The corresponding CI_DEPLOY_XXX variables must be defined as variables in the Gitlab/Github/Travis CD/CI configurations -->
+
+    <servers>
+
+        <!-- Amazon AWS -->
+        <server>
+            <id>aws-public</id>
+            <username>${CI_DEPLOY_AWS_PUBLIC_USERNAME}</username>
+            <password>${CI_DEPLOY_AWS_PUBLIC_PASSWORD}</password>
+            <configuration>
+                <region>eu-west-3</region>
+            </configuration>
+        </server>
+
+        <server>
+            <id>aws-private</id>
+            <username>${CI_DEPLOY_AWS_PRIVATE_USERNAME}</username>
+            <password>${CI_DEPLOY_AWS_PRIVATE_PASSWORD}</password>
+            <configuration>
+                <region>eu-west-3</region>
+            </configuration>
+        </server>
+
+        <!-- Gitlab -->
+        <server>
+            <id>gitlab-public</id>
+            <username>${CI_DEPLOY_GITLAB_PUBLIC_USERNAME}</username>
+            <password>${CI_DEPLOY_GITLAB_PUBLIC_PASSWORD}</password>
+        </server>
+
+        <server>
+            <id>gitlab-private</id>
+            <username>${CI_DEPLOY_GITLAB_PRIVATE_USERNAME}</username>
+            <password>${CI_DEPLOY_GITLAB_PRIVATE_PASSWORD}</password>
+        </server>
+
+        <!-- Github -->
+        <server>
+            <id>github</id>
+            <username>${CI_DEPLOY_GITHUB_USERNAME}</username>
+            <password>${CI_DEPLOY_GITHUB_PASSWORD}</password>
+        </server>
+
+    </servers>
+
+</settings>
