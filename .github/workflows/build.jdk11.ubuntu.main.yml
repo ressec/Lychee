@@ -31,7 +31,7 @@ jobs:
 
   # Job: Build project
   build:
-    name: Build
+    name: Build & Package
     runs-on: ubuntu-latest
     if: github.event.pull_request.base.ref == 'main'
     permissions:
@@ -77,7 +77,7 @@ jobs:
 
   # Job: Analyze
   analyze:
-    name: Analyze
+    name: Analyze with Sonar
     runs-on: ubuntu-latest
     if: github.event.pull_request.base.ref == 'main'
     permissions:
@@ -118,7 +118,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any.
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -f lychee-parent/pom.xml -P coverage
+        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -f lychee-parent/pom.xml -Psonar
 
 
   # Job: Deploy artifacts to Github Packages
@@ -129,7 +129,7 @@ jobs:
     permissions:
       contents: read
       packages: write
-    needs: build
+    needs: analyze
     steps:
       - uses: actions/checkout@v2
         with:
