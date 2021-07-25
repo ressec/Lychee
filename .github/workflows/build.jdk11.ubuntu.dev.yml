@@ -1,0 +1,120 @@
+#
+# Copyright(c) 2021 Hemajoo Systems Inc.
+# --------------------------------------------------------------------------------------
+# This file is part of Hemajoo Systems Inc. projects which is licensed
+# under the Apache license version 2 and use is subject to license terms.
+# You should have received a copy of the license with the project's artifact
+# binaries and/or sources.
+#
+# License can be consulted at http://www.apache.org/licenses/LICENSE-2.0
+# --------------------------------------------------------------------------------------
+#
+# Note: This Github action is triggered when code is pushed to the 'main' branch in following cases:
+#          - commits
+#          - pull requests
+#       then the following jobs are triggered:
+#          - build
+#
+name: dev.maven.jdk11.ubuntu
+
+on:
+  push:
+    branches:
+      - dev
+  pull_request:
+    branches:
+      - dev
+    types: [opened, synchronize, reopened]
+
+jobs:
+
+  # Job: Build project
+  build:
+    name: Build & Package
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.base.ref == 'dev'
+    permissions:
+      contents: read # ???
+      packages: read # Can read packages
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
+
+      # Step: Setup JDK 11
+      - name: Set up JDK 11
+        uses: actions/setup-java@v2
+        with:
+          java-version: '11'
+          distribution: 'adopt'
+
+      # Step - Cache Sonar packages
+      - name: Cache SonarCloud packages
+        uses: actions/cache@v1
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
+      # Step: Cache Maven packages
+      - name: Cache Maven packages
+        uses: actions/cache@v1
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+
+      # Step: Maven Clean & Package
+      - name: Build & Package with Maven
+        run: mvn -B clean package -f lychee-parent/pom.xml
+#        run: mvn -s $GITHUB_WORKSPACE/.github/workflows/maven-settings.xml -B clean package -f lychee-parent/pom.xml
+#        env:
+#          RESSEC_GITHUB_USERNAME: ${{ secrets.RESSEC_GITHUB_USERNAME }}
+#          RESSEC_GITHUB_READ_TOKEN: ${{ secrets.RESSEC_GITHUB_READ_TOKEN }}
+
+
+# Job: Analyze
+  analyze:
+    name: Quality Analysis
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.base.ref == 'dev'
+    permissions:
+      contents: read
+      packages: read
+    needs: build
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
+
+      # Step: Setup JDK 11
+      - name: Set up JDK 11
+        uses: actions/setup-java@v2
+        with:
+          java-version: '11'
+          distribution: 'adopt'
+
+      # Step - Cache Sonar packages
+      - name: Cache SonarCloud packages
+        uses: actions/cache@v1
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
+      # Step: Cache Maven packages
+      - name: Cache Maven packages
+        uses: actions/cache@v1
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+
+      # Step - Maven Verify for Sonar
+      - name: Analyze with Sonar
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any.
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -f lychee-parent/pom.xml -Psonar
