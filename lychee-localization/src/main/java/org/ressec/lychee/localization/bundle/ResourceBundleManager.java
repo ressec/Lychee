@@ -16,6 +16,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Synchronized;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.lang3.StringUtils;
 import org.reflections.ReflectionUtils;
 import org.ressec.avocado.core.exception.checked.StringExpanderException;
 import org.ressec.avocado.core.exception.unchecked.AnnotationException;
@@ -49,6 +50,11 @@ import java.util.stream.Collectors;
 @Log4j2
 public final class ResourceBundleManager
 {
+    private static final String EXCEPTION_NO_TRANSLATION_REQUEST_AVAILABLE = "No translation request available!";
+    private static final String SETTER_PREFIX = "set";
+    private static final String GETTER_PREFIX = "get";
+    private static final String ROPE_LOCALIZABLE_FIELD_NAME = "value";
+
     /**
      * Creates the unique (per JVM) instance of the singleton.
      */
@@ -253,28 +259,6 @@ public final class ResourceBundleManager
         return lookup(key,locale);
     }
 
-//    /**
-//     * Retrieves a resource bundle entry key for the given bundle, locale and object instance.
-//     * @param bundle Resource bundle path name.
-//     * @param key Resource bundle key.
-//     * @param locale Locale.
-//     * @param instance Instance of object containing the values of the variables to substitute in {@code bundle} and {@code key}.
-//     * @return Localized text.
-//     * @throws LocalizationException Thrown in case an error occurred during variable expansion of annotation parameters.
-//     */
-//    public String get(final @NonNull String bundle, final @NonNull String key, final @NonNull Locale locale, final Object instance)
-//    {
-//        try
-//        {
-//            load(StringExpander.expandVariables(instance, bundle), locale);
-//            return lookup(StringExpander.expandVariables(instance, key), locale);
-//        }
-//        catch (StringExpanderException e)
-//        {
-//            throw new LocalizationException(e);
-//        }
-//    }
-
     /**
      * Lookups for the first matching resource bundle entry in registered resource bundles.
      * @param key Resource bundle entry key.
@@ -363,7 +347,7 @@ public final class ResourceBundleManager
                             "Service 'ResourceBundleManager#resolve' invoked from a class not being an enum nor from an annotated method! Please check class: '%s'",
                             instance.getClass().getDeclaringClass().getName()));
                 }
-                catch (NullPointerException e)
+                catch (Exception e)
                 {
                     throw new AnnotationException(String.format(
                             "Service 'ResourceBundleManager#resolve' invoked from a class not being an enum nor from an annotated method! Please check class: '%s'",
@@ -451,17 +435,20 @@ public final class ResourceBundleManager
 
         if (locale != this.locale)
         {
-           current = this.locale; // Fallback scenario #1 Try the ResourceBundleManager current locale.
+            // Fallback scenario #1 ... try the ResourceBundleManager current locale.
+           current = this.locale;
         }
         else
         {
             if (current == defaultLocale)
             {
-                current = Locale.getDefault(); // Fallback scenario #3 Try the ResourceBundleManager JVM locale.
+                // Fallback scenario #3 ... try the ResourceBundleManager JVM locale.
+                current = Locale.getDefault();
             }
             else
             {
-                current = defaultLocale; // Fallback scenario #2 Try the ResourceBundleManager default locale.
+                // Fallback scenario #2 ... try the ResourceBundleManager default locale.
+                current = defaultLocale;
             }
         }
 
@@ -504,50 +491,45 @@ public final class ResourceBundleManager
     {
         if (instance instanceof Rope)
         {
+            String methodName = SETTER_PREFIX + StringUtils.capitalize(ROPE_LOCALIZABLE_FIELD_NAME);
+
             Rope element = (Rope) instance;
             if (element.getBundle() != null && element.getKey() != null)
             {
                 String expandedBundle;
                 String expandedKey;
-                Field field;
+                Method method;
                 try
                 {
-                    field = instance.getClass().getDeclaredField("value");
-                    field.setAccessible(true);
+                    method = instance.getClass().getMethod(methodName, String.class);
                     expandedBundle = StringExpander.expandVariables(reference != null ? reference : instance, element.getBundle());
                     expandedKey = StringExpander.expandVariables(reference != null ? reference : instance, element.getKey());
                     String translated = get(expandedBundle, expandedKey, locale);
-                    field.set(instance, translated);
+                    method.invoke(instance, translated);
                 }
-                catch (NoSuchFieldException | IllegalAccessException | StringExpanderException e)
+                catch (Exception e)
                 {
-                    e.printStackTrace(); // TODO Log and Throw an exception!
+                    throw new ResourceBundleException(String.format("Cannot inject resource value for rope field: 'value' due to: '%s'", e.getMessage()), e);
                 }
             }
             else if (element.getKey() != null) // No bundle specified, the resource bundle should be already loaded!
             {
                 String expandedKey;
-                Field field;
+                Method method;
                 try
                 {
-                    field = instance.getClass().getDeclaredField("value");
-                    field.setAccessible(true);
+                    method = instance.getClass().getMethod(methodName, String.class);
                     expandedKey = StringExpander.expandVariables(reference != null ? reference : instance, element.getKey());
-                    //String translated = get(expandedKey, locale);
 
                     Optional<String> result = findBundle(expandedKey);
                     if (result.isPresent())
                     {
-                        field.set(instance, getKey(result.get(), expandedKey, locale));
-                    }
-                    else
-                    {
-                        // TODO Do we throw an exception?
+                        method.invoke(instance, getKey(result.get(), expandedKey, locale));
                     }
                 }
-                catch (NoSuchFieldException | IllegalAccessException | StringExpanderException e)
+                catch (Exception e)
                 {
-                    e.printStackTrace(); // TODO Log and Throw an exception!
+                    throw new ResourceBundleException(String.format("Cannot inject resource value for rope field: 'value' due to: '%s'", e.getMessage()), e);
                 }
             }
         }
@@ -585,6 +567,7 @@ public final class ResourceBundleManager
     {
         Localize annotation;
         Rope rope;
+        Method getter;
 
         List<Field> fields = ReflectionHelper.findAnnotatedFieldsInClassHierarchy(instance.getClass(), Localize.class);
         for (Field field : fields)
@@ -593,10 +576,10 @@ public final class ResourceBundleManager
 
             try
             {
-                field.setAccessible(true);
-                if (field.get(instance) instanceof Rope)
+                getter = getGetterMethod(instance, field.getName());
+                if (getter.invoke(instance) instanceof Rope)
                 {
-                    rope = (Rope) field.get(instance);
+                    rope = (Rope) getter.invoke(instance);
                     if (rope != null)
                     {
                         if (rope.getValue() == null && rope.getBundle() == null && rope.getKey() == null)
@@ -619,7 +602,8 @@ public final class ResourceBundleManager
                         }
                         else if (field.getType() == Rope.class)
                         {
-                            rope = (Rope) field.get(instance);
+                            getter = getGetterMethod(instance, field.getName());
+                            rope = (Rope) getter.invoke(instance);
                             if (rope != null)
                             {
                                 if (rope.getValue() == null && rope.getBundle() == null && rope.getKey() == null)
@@ -635,55 +619,50 @@ public final class ResourceBundleManager
                     }
                     else
                     {
-                        throw new NotImplementedException(""); // TODO Fix this!
+                        throw new NotImplementedException("To be fixed!");
                     }
                 }
 
             }
-            catch (IllegalAccessException | NoSuchFieldException e)
+            catch (Exception e)
             {
                 throw new LocalizationException(e);
             }
         }
     }
 
-    private void resolveRopeAnnotatedField(final @NonNull Object instance, final @NonNull Field field, final @NonNull Localize annotation, final @NonNull Locale locale) throws IllegalAccessException, NoSuchFieldException
+    private void resolveRopeAnnotatedField(final @NonNull Object instance, final @NonNull Field field, final @NonNull Localize annotation, final @NonNull Locale locale)
     {
         String expandedBundle;
         String expandedKey;
-        Field value;
-        Rope rope = (Rope) field.get(instance);
+        Rope rope;
 
-        value = field.get(instance).getClass().getDeclaredField("value");
-        value.setAccessible(true);
+        Method getter = getGetterMethod(instance, field.getName());
 
-        if (rope.getBundle() != null && rope.getKey() != null)
+        try
         {
-            try
+            rope = (Rope) getter.invoke(instance);
+
+            if (rope.getBundle() != null && rope.getKey() != null)
             {
                 expandedBundle = StringExpander.expandVariables(instance, rope.getBundle());
                 expandedKey = StringExpander.expandVariables(instance, rope.getKey());
             }
-            catch (StringExpanderException e)
-            {
-                throw new LocalizationException(e);
-            }
-        }
-        else
-        {
-            try
+            else
             {
                 expandedBundle = StringExpander.expandVariables(instance, annotation.bundle());
                 expandedKey = StringExpander.expandVariables(instance, annotation.key());
             }
-            catch (StringExpanderException e)
-            {
-                throw new LocalizationException(e);
-            }
-        }
 
-        String translated = get(expandedBundle, expandedKey, locale);
-        value.set(rope, translated); // TODO Fix this by accessing the setter!
+            String translated = get(expandedBundle, expandedKey, locale);
+            Method setter = getSetterMethod(rope, ROPE_LOCALIZABLE_FIELD_NAME, String.class);
+
+            setter.invoke(rope, translated);
+        }
+        catch (Exception e)
+        {
+            throw new ResourceBundleException(e);
+        }
     }
 
     /**
@@ -695,6 +674,8 @@ public final class ResourceBundleManager
      */
     private String resolveMethod(final @NonNull Object instance, final @NonNull Method method, final @NonNull Locale locale)
     {
+        String key;
+        String bundle;
         Localize annotation = method.getAnnotation(Localize.class);
 
         if (annotation.key().isEmpty())
@@ -718,8 +699,6 @@ public final class ResourceBundleManager
         }
 
         // Do the variables substitution (if some) for the 'bundle' and the 'key' properties.
-        String key = null;
-        String bundle = null;
         try
         {
             key = StringExpander.expandVariables(instance, annotation.key());
@@ -855,29 +834,15 @@ public final class ResourceBundleManager
      */
     private void setFieldValue(final @NonNull Object instance, final @NonNull Field field, final @NonNull String value)
     {
-        if (!field.canAccess(instance))
-        {
-            field.setAccessible(true);
-        }
+        Method setter = getSetterMethod(instance, field.getName(), String.class);
 
         try
         {
-            field.set(instance, value); // TODO Fix this by accessing the setter instead!
+            setter.invoke(instance, value);
         }
-        catch (IllegalArgumentException e)
+        catch (Exception e)
         {
-            try
-            {
-                field.set(instance, Integer.valueOf(value)); // TODO Fix this by accessing the setter instead!
-            }
-            catch (IllegalAccessException iae)
-            {
-                throw new AnnotationException(iae);
-            }
-        }
-        catch (IllegalAccessException ex)
-        {
-            throw new AnnotationException(ex);
+            throw new ResourceBundleException(e);
         }
     }
 
@@ -960,6 +925,60 @@ public final class ResourceBundleManager
         }
 
         return null;
+    }
+
+    /**
+     * Returns the public {@code getter} method for the given object instance and field name.
+     * @param instance Object instance.
+     * @param fieldName Field name.
+     * @param parameterClasses Parameter(s) class.
+     * @return Method representing the public getter.
+     */
+    private Method getGetterMethod(final @NonNull Object instance, final @NonNull String fieldName, final Class<?>... parameterClasses)
+    {
+        Method method;
+        String methodName = GETTER_PREFIX + StringUtils.capitalize(fieldName);
+
+        try
+        {
+            method = instance.getClass().getDeclaredMethod(methodName, parameterClasses);
+        }
+        catch (Exception e)
+        {
+            throw new AnnotationException(String.format(
+                    "No public getter found for field name: '%s', instance class name: '%s'!",
+                    fieldName,
+                    instance.getClass().getName()));
+        }
+
+        return method;
+    }
+
+    /**
+     * Returns the public {@code setter} method for the given object instance and field name.
+     * @param instance Object instance.
+     * @param fieldName Field name.
+     * @param parameterClasses Parameter(s) class.
+     * @return Method representing the public getter.
+     */
+    private Method getSetterMethod(final @NonNull Object instance, final @NonNull String fieldName, final Class<?>... parameterClasses)
+    {
+        Method method;
+        String methodName = SETTER_PREFIX + StringUtils.capitalize(fieldName);
+
+        try
+        {
+            method = instance.getClass().getDeclaredMethod(methodName, parameterClasses);
+        }
+        catch (Exception e)
+        {
+            throw new AnnotationException(String.format(
+                    "No public setter found for field name: '%s', instance class name: '%s'!",
+                    fieldName,
+                    instance.getClass().getName()));
+        }
+
+        return method;
     }
 
     /**
@@ -1056,9 +1075,14 @@ public final class ResourceBundleManager
                 .withTargetLanguage(targetLanguage)
                 .build());
 
-        request = executeTranslationRequest(request).get();
+        Optional<ITranslationRequest> optional = executeTranslationRequest(request);
+        if (optional.isPresent())
+        {
+            request = optional.get();
+            return (TranslationOperationTranslate) request.getOperations().get(0); // Only one translation operation
+        }
 
-        return (TranslationOperationTranslate) request.getOperations().get(0); // Only one translation operation
+        throw new TranslationException(EXCEPTION_NO_TRANSLATION_REQUEST_AVAILABLE);
     }
 
     /**
@@ -1077,9 +1101,14 @@ public final class ResourceBundleManager
                 .withTargetLanguage(targetLanguage)
                 .build());
 
-        request = executeTranslationRequest(request).get();
+        Optional<ITranslationRequest> optional = executeTranslationRequest(request);
+        if (optional.isPresent())
+        {
+            request = optional.get();
+            return (TranslationOperationTranslate) request.getOperations().get(0); // Only one translation operation
+        }
 
-        return (TranslationOperationTranslate) request.getOperations().get(0); // Only one translation operation
+        throw new TranslationException(EXCEPTION_NO_TRANSLATION_REQUEST_AVAILABLE);
     }
 
     /**
@@ -1096,9 +1125,14 @@ public final class ResourceBundleManager
                 .withText(text)
                 .build());
 
-        request = executeTranslationRequest(request).get();
+        Optional<ITranslationRequest> optional = executeTranslationRequest(request);
+        if (optional.isPresent())
+        {
+            request = optional.get();
+            return (TranslationOperationDetect) request.getOperations().get(0); // Only one translation operation
+        }
 
-        return (TranslationOperationDetect) request.getOperations().get(0); // Only one detect operation
+        throw new TranslationException(EXCEPTION_NO_TRANSLATION_REQUEST_AVAILABLE);
     }
 
     /**
@@ -1115,8 +1149,13 @@ public final class ResourceBundleManager
                 .withTargetLanguage(language)
                 .build());
 
-        request = executeTranslationRequest(request).get();
+        Optional<ITranslationRequest> optional = executeTranslationRequest(request);
+        if (optional.isPresent())
+        {
+            request = optional.get();
+            return (TranslationOperationSupportedLanguages) request.getOperations().get(0); // Only one translation operation
+        }
 
-        return (TranslationOperationSupportedLanguages) request.getOperations().get(0); // Only one detect operation
+        throw new TranslationException(EXCEPTION_NO_TRANSLATION_REQUEST_AVAILABLE);
     }
 }

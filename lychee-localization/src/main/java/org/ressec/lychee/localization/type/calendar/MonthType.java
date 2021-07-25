@@ -129,9 +129,9 @@ public enum MonthType implements Serializable
     }
 
     /**
-     * Returns the localized definition of a month in the given locale.
+     * Returns the definition of the term {@code month} in the given locale.
      * @param locale Locale to use.
-     * @return Definition of a month.
+     * @return Definition of the term {@code month}.
      */
     @Localize(bundle = BUNDLE_NAME, key = BUNDLE_PATH_FOR_TERM_DEFINITION)
     public static String getTermDefinition(final @NonNull Locale locale)
@@ -160,8 +160,8 @@ public enum MonthType implements Serializable
     }
 
     /**
-     * Returns the localized description of the month in the current locale.
-     * @return Localized description of the month.
+     * Returns the description of the month in the current locale.
+     * @return Description of the month.
      */
     public final String getDescription()
     {
@@ -171,7 +171,7 @@ public enum MonthType implements Serializable
     /**
      * Returns the localized description of the month in the given locale.
      * @param locale Locale to use.
-     * @return Localized description of the month.
+     * @return Description of the month.
      */
     @Localize(bundle = BUNDLE_NAME, key = BUNDLE_PATH_FOR_PROPERTY_DESCRIPTION)
     public final String getDescription(final @NonNull Locale locale)

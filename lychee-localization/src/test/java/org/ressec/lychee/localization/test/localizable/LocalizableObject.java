@@ -35,21 +35,24 @@ public class LocalizableObject implements Localizable
     @Setter
     private MonthType month; // Variable used for the month name localization in the I18n annotation
 
-    // No setter as its computed internally!
     // This field should be annotated with a Localization annotation with: @I18n(bundle = "i18n/test", key = "test.core.extension.iso.time.series.name")
     private String testNameKey;
 
-    // No setter as its computed internally!
-    @Localize(bundle = "i18n/day", key = "day.${day}.name")
+    // If a setter is defined, an error should be raised!
+    // The 'day' field is used to set the value of the variable 'day' for the resource bundle key.
+    // A getter has to be implemented, see: getDayName()
+    @Setter
+    @Localize(bundle = "i18n/day", key = "day.${day}.name") // Uses the day field to resolve the resource bundle key.
     private String dayName;
 
     // No setter as its computed internally!
-    @Localize(bundle = "i18n/month", key = "month.${month}.name")
+    @Setter
+    @Localize(bundle = "i18n/month", key = "month.${month}.name") // Uses the month field to resolve the resource bundle key.
     private String monthName;
 
     // No setter as its computed internally!
     @Getter
-    @Localize(bundle = "i18n/month", key = "month.${month}.name")
+    @Localize(bundle = "i18n/month", key = "month.${month}.name") // Uses the month field to resolve the resource bundle key.
     private final Rope stringMonthName;
 
     @Getter

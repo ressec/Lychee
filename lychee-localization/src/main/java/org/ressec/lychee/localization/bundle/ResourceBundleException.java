@@ -21,11 +21,6 @@ import org.ressec.avocado.core.exception.unchecked.AbstractUncheckedException;
 public class ResourceBundleException extends AbstractUncheckedException
 {
     /**
-     * Default serialization identifier.
-     */
-    private static final long serialVersionUID = 1L;
-
-    /**
      * Thrown to indicate that an error during a resource bundle manipulation.
      * @param exception Parent {@link Exception}.
      */
